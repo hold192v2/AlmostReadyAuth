@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  webapi:
+    image: ${DOCKER_REGISTRY-}webapi
+    build:
+      context: .
+      dockerfile: WebAPI/Dockerfile
+    ports:
+    - "8443:8080"
+    - "8443:8081"
+
+  migrations:
+    container_name: service-migrations2
+    image: service-migrations
+    build:
+      context: .
+      dockerfile: WebApi/Dockerfile
+      target: migrations
+    depends_on:
+        - postgres
+
+  postgres:
+    image: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=second
+      - POSTGRES_DB=localhost
+    volumes:
+      - ./volumes/data/db:/var/lib/postgresql/data
+    ports:
+       - 5432:5432
