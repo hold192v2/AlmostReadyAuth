@@ -14,6 +14,9 @@ namespace WebAPI.Extentions
             Configaration.Secrets.ApiKey = builder.Configuration.GetSection("Secrets").GetValue<string>("ApiKey") ?? string.Empty;
             Configaration.Secrets.JwtPrivateKey = builder.Configuration.GetSection("Secrets").GetValue<string>("JwtPrivateKey") ?? string.Empty;
             Configaration.Secrets.PasswordSaltKey = builder.Configuration.GetSection("Secrets").GetValue<string>("PasswordSaltKey") ?? string.Empty;
+            BotConfiguration.Secrets.BotToken = builder.Configuration.GetSection("BotSecrets").GetValue<string>("BotToken") ?? string.Empty;
+            BotConfiguration.Secrets.SecretToken = builder.Configuration.GetSection("BotSecrets").GetValue<string>("SecretToken") ?? string.Empty;
+            BotConfiguration.Secrets.BotWebhookUrl = builder.Configuration.GetSection("BotSecrets").GetValue<Uri>("BotWebhookUrl") ?? default!;
         }
 
         public static void AddJwtAuthentication(this WebApplicationBuilder builder)

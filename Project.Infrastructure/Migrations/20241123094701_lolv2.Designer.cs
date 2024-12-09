@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Project.Infrastructure.Context;
@@ -11,9 +12,11 @@ using Project.Infrastructure.Context;
 namespace Project.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241123094701_lolv2")]
+    partial class lolv2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -39,15 +42,11 @@ namespace Project.Infrastructure.Migrations
 
                     b.Property<string>("InputPhone")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("VARCHAR")
-                        .HasColumnName("InputPhone");
+                        .HasColumnType("text");
 
                     b.Property<string>("UserIP")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("VARCHAR")
-                        .HasColumnName("UserIP");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -82,7 +81,7 @@ namespace Project.Infrastructure.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("48067860-7807-4a9e-a330-f876b4052bfc"),
+                            Id = new Guid("f6c62eb5-1014-44c9-9628-9b0757f8f4bb"),
                             DateCreated = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DateDeleted = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DateUpdated = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -90,7 +89,7 @@ namespace Project.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = new Guid("f7259b29-52e0-4dc0-bd06-4e60239f8daf"),
+                            Id = new Guid("8517a834-7229-494a-81fa-5741c04c3eae"),
                             DateCreated = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DateDeleted = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             DateUpdated = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),

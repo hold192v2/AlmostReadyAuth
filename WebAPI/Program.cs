@@ -5,10 +5,18 @@ using System.Text.Json.Serialization;
 using Microsoft.OpenApi.Models;
 using WebAPI.Extentions;
 using Project.Infrastructure.Context;
+using Telegram.Bot;
+using Project.Domain.Security;
+using Microsoft.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.AddConfiguration();
+builder.Services.AddHttpClient("tgwebhook").RemoveAllLoggers().AddTypedClient<ITelegramBotClient>(
+    httpClient => new TelegramBotClient(BotConfiguration.Secrets.BotToken, httpClient));
+builder.Services.AddSingleton<Project.Infrastructure.Repositories.UpdateHadlerRepository>();
+builder.Services.ConfigureTelegramBotMvc();
 
 builder.Services.AddControllers();
 builder.Services.ConfigurePresistanceApp(builder.Configuration);
@@ -18,8 +26,14 @@ builder.Services.AddMvc()
                 .AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
 
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+
 builder.Services.AddEndpointsApiExplorer();
+
+
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "Demo API", Version = "v1" });
@@ -52,7 +66,7 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.ConfigureCorsPolicy();
 
-builder.AddConfiguration();
+
 builder.AddJwtAuthentication();
 
 var app = builder.Build();

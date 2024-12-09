@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Telegram.Bot.Polling;
 
 namespace Project.Infrastructure
 {
@@ -22,6 +23,8 @@ namespace Project.Infrastructure
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IUserInterface, UserRepository>();
             services.AddScoped<IRoleRepository, RoleRepository>();
+            services.AddScoped<IBotTelegram, BotInputRepository>();
+            services.AddScoped<IUpdateHandler, UpdateHadlerRepository>();
         }
     }
 }

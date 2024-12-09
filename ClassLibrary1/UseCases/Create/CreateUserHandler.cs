@@ -49,7 +49,7 @@ namespace Project.Application.UseCases.Create
                 return new Response("Internal Server Error", 500);
             }
 
-            User user = new User(request.Phone, request.Password);
+            User user = new User(request.Phone, _service.HashPassword(request.Password));
             user.Roles = roles;
             try
             {
