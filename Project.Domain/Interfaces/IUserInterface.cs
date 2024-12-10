@@ -10,7 +10,6 @@ namespace Project.Domain.Interfaces
     public interface IUserInterface :IBaseOperationRepository<User>
     {
         Task<User?> GetUserByPhoneAsync(string phone, CancellationToken cancellationToken);
-        public Task<User?> GetUserByRefreshCode(Guid refreshToken, CancellationToken cancellationToken);
         Task<bool> AnyAsync(string  phone, CancellationToken cancellationToken);
     }
 }

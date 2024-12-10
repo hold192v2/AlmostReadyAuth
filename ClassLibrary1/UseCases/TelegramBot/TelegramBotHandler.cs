@@ -18,6 +18,9 @@ using Microsoft.AspNetCore.Http;
 using static Project.Domain.Security.BotConfiguration;
 using Project.Application.DTOs;
 using AutoMapper;
+using Project.Domain.Entities;
+using Telegram.Bot.Requests.Abstractions;
+using Project.Application.Interfaces;
 
 namespace Project.Application.UseCases.TelegramBot
 {
@@ -31,6 +34,8 @@ namespace Project.Application.UseCases.TelegramBot
         private readonly IOptions<BotSecretsConfiguration> _config;
         private readonly IUpdateHandler _updateHandler;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IJwtService _jwtService;
+        private readonly IRefreshRepository _refreshRepository;
 
         public TelegramBotHandler(
             IMapper mapper,
@@ -39,8 +44,9 @@ namespace Project.Application.UseCases.TelegramBot
             IBotTelegram botInputRepository,
             IUnitOfWork unitOfWork,
             IOptions<BotSecretsConfiguration> config,
-            IUpdateHandler updateHandler,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IJwtService jwtService,
+            IRefreshRepository refreshRepository)
         {
             _mapper = mapper;
             _userInterface = userInterface;
@@ -48,8 +54,9 @@ namespace Project.Application.UseCases.TelegramBot
             _botInputRepository = botInputRepository;
             _unitOfWork = unitOfWork;
             _config = config;
-            _updateHandler = updateHandler;
             _httpContextAccessor = httpContextAccessor;
+            _jwtService = jwtService;
+            _refreshRepository = refreshRepository;
         }
 
         public async Task<Response> Handle(TelegramBotRequest request, CancellationToken cancellationToken)
@@ -122,7 +129,19 @@ namespace Project.Application.UseCases.TelegramBot
 
                 // Генерация JWT токена
                 var userResponseDTO = _mapper.Map<UserResponseDTO>(user);
-
+                var accessToken = _jwtService.Generate(userResponseDTO);
+                var refreshToken = Guid.NewGuid().ToString();
+                var response = new EndResponse(accessToken, refreshToken);
+                var refreshSession = new RefreshSession
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user.Id,
+                    RefreshToken = refreshToken,
+                    Ip = clientIdentifier,
+                    Fingerprint = "",
+                    ExpiresAt = DateTime.UtcNow.AddDays(60)
+                };
+                _refreshRepository.Create(refreshSession);
 
                 // Удаление данных после успешной аутентификации
                 await _botInputRepository.RemoveByClientIdentifierAsync("::1");
@@ -136,7 +155,8 @@ namespace Project.Application.UseCases.TelegramBot
                     replyMarkup: replyMarkup
 
                 );
-                return new Response("Message processed successfully", 200, userResponseDTO);
+                var endResponse = new EndResponse(accessToken, refreshToken);
+                return new Response("Message processed successfully", 200, endResponse);
             }
 
             // Обработка в случае ошибки

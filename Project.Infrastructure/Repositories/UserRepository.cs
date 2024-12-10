@@ -32,11 +32,5 @@ namespace Project.Infrastructure.Repositories
                 .FirstOrDefaultAsync(x => x.PhoneNumber == phone, cancellationToken);
         }
         //Выдает пользователя по refresh токену
-        public Task<User?> GetUserByRefreshCode(Guid refreshToken, CancellationToken cancellationToken)
-        {
-            return _context.Users
-                .Include(x => x.Roles)
-                .FirstOrDefaultAsync(x => x.RefreshToken == refreshToken, cancellationToken : cancellationToken);
-        }
     }
 }

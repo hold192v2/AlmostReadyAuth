@@ -10,10 +10,12 @@ using Project.Domain.Entities;
 using Project.Domain.Interfaces;
 using Project.Domain.Security;
 using Project.Infrastructure.Repositories;
+using System.Threading;
 using Telegram.Bot;
 using Telegram.Bot.Requests.Abstractions;
 using Telegram.Bot.Types;
 using WebAPI.Extentions;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace WebAPI.Controllers
 {
@@ -37,17 +39,37 @@ namespace WebAPI.Controllers
         {
             var response = await _mediator.Send(request, cancellationToken);
             if (response is null) return BadRequest();
-            response.Data.Token = JwtExtention.Generate(response.Data);
-            return Ok(response.Data.Token);
+            Response.Cookies.Append("refreshToken", response.Data.RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                MaxAge = TimeSpan.FromDays(60),
+                Path = "/auth"
+            });
+            return Ok(new { response.Data.AccessToken });
         }
 
         [HttpPost("refresh")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request, CancellationToken cansellation)
         {
+            if (!Request.Cookies.TryGetValue("refreshToken", out var refreshToken))
+                return Unauthorized("Refresh token is missing.");
+            request = request with { RefreshToken = refreshToken };
+
             var response = await _mediator.Send(request, cansellation);
             if (response is null) return BadRequest();
-            response.Data.Token = JwtExtention.Generate(response.Data);
-            return Ok(response);
+
+            Response.Cookies.Append("refreshToken", response.Data.RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                MaxAge = TimeSpan.FromDays(60),
+                Path = "/auth"
+            });
+
+            return Ok(new { response.Data.AccessToken });
         }
 
         [HttpPost("register")]
@@ -76,10 +98,17 @@ namespace WebAPI.Controllers
 
                 var response = await _mediator.Send(telegramRequest, cancellation);
 
-                if (response.Data is UserResponseDTO userDTO)
+                if (response.Data is EndResponse endResponse)
                 {
-                    var token = JwtExtention.Generate(userDTO);
-                    return Ok(new { Token = token });
+                    Response.Cookies.Append("refreshToken", response.Data.RefreshToken, new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Secure = true,
+                        SameSite = SameSiteMode.Strict,
+                        MaxAge = TimeSpan.FromDays(60),
+                        Path = "/auth"
+                    });
+                    return Ok(new { response.Data.AccessToken });
                 }
                 return Ok("Just message.");
             }
@@ -119,7 +148,7 @@ namespace WebAPI.Controllers
             }
         }
 
-      
+
     }
    
 }

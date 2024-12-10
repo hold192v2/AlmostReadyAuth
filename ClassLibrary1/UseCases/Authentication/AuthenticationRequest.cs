@@ -11,8 +11,10 @@ namespace Project.Application.UseCases.Authentication
     public record AuthenticationRequest(
     
         string Phone,
-        string Password
-        ):
+        string Password,
+        string Ip,
+        string Fingerprint
+        ) :
         IRequest<Response>;
     
 }

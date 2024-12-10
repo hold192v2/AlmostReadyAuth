@@ -8,6 +8,10 @@ using Project.Infrastructure.Context;
 using Telegram.Bot;
 using Project.Domain.Security;
 using Microsoft.AspNetCore;
+using Project.Domain.Interfaces;
+using Project.Infrastructure.Repositories;
+using Project.Application.Interfaces;
+using Project.Application.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,8 +19,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddConfiguration();
 builder.Services.AddHttpClient("tgwebhook").RemoveAllLoggers().AddTypedClient<ITelegramBotClient>(
     httpClient => new TelegramBotClient(BotConfiguration.Secrets.BotToken, httpClient));
-builder.Services.AddSingleton<Project.Infrastructure.Repositories.UpdateHadlerRepository>();
 builder.Services.ConfigureTelegramBotMvc();
+builder.Services.AddScoped<IJwtService, JwtService>();
 
 builder.Services.AddControllers();
 builder.Services.ConfigurePresistanceApp(builder.Configuration);

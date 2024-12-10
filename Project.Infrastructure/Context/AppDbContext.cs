@@ -21,6 +21,7 @@ namespace Project.Infrastructure.Context
         public DbSet<User> Users { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<BotInputData> BotInputDatas { get; set; }
+        public DbSet<RefreshSession> refreshSessions { get; set; }
     }
 
 

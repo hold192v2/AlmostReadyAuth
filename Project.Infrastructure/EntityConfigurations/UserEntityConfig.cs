@@ -63,9 +63,6 @@ namespace Project.Infrastructure.EntityConfigurations
             .HasMaxLength(100)
             .IsRequired();
 
-            builder.Property(x => x.RefreshToken)
-                .HasColumnName("RefreshToken");
-
             builder
                 .HasMany(x => x.Roles)
                 .WithMany(x => x.Users)
@@ -81,6 +78,11 @@ namespace Project.Infrastructure.EntityConfigurations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade));
+            builder.HasMany(x => x.RefreshSessions)
+                   .WithOne(x => x.User)
+                   .HasForeignKey(x => x.UserId);
+
+                   
         }
     }
 }

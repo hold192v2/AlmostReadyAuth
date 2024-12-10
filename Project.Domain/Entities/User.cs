@@ -18,7 +18,8 @@ namespace Project.Domain.Entities
         public decimal Balance { get; set; } = 0;
         public bool Status { get; set; } = false;
         public List<Role> Roles { get; set; } = new();
-        public Guid RefreshToken { get; set; }
+
+        public ICollection<RefreshSession> RefreshSessions { get; set; } = new List<RefreshSession>();
 
         public User(string phoneNumber, string password)
         {
@@ -29,11 +30,6 @@ namespace Project.Domain.Entities
         {
             Password = newUser.Password;
             Roles = newUser.Roles;
-        }
-
-        public void GenerateRefreshToken()
-        {
-            RefreshToken = Guid.NewGuid();
         }
         public void AddRole(Role role)
         {

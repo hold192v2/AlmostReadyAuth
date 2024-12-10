@@ -24,7 +24,7 @@ namespace Project.Infrastructure
             services.AddScoped<IUserInterface, UserRepository>();
             services.AddScoped<IRoleRepository, RoleRepository>();
             services.AddScoped<IBotTelegram, BotInputRepository>();
-            services.AddScoped<IUpdateHandler, UpdateHadlerRepository>();
+            services.AddScoped<IRefreshRepository, RefreshRepository>();
         }
     }
 }

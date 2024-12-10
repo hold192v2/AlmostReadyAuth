@@ -8,6 +8,6 @@ using System.Threading.Tasks;
 
 namespace Project.Application.UseCases.RefreshToken
 {
-    public record RefreshTokenRequest(Guid RefreshToken):
+    public record RefreshTokenRequest(string RefreshToken, string Fingerprint):
         IRequest<Response>;
 }
