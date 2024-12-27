@@ -23,27 +23,28 @@ namespace Project.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task SavePhoneNumberAsync(string phoneNumber, string clientIdentifier)
+        public async Task SavePhoneNumberAsync(string phoneNumber, string clientIdentifier, string generateCode)
         {
             var data = new BotInputData
             {
                 Id = Guid.NewGuid(),
                 UserIP = clientIdentifier,
-                InputPhone = phoneNumber
+                InputPhone = phoneNumber,
+                GenerateCode = generateCode
             };
 
             await _context.BotInputDatas.AddAsync(data);
             await _context.SaveChangesAsync();
         }
 
-        public Task<BotInputData?> GetByClientIdentifierAsync(string clientIdentifier)
+        public Task<BotInputData?> GetByPhoneAsync(string phone)
         {
-            return _context.BotInputDatas.FirstOrDefaultAsync(x => x.UserIP == clientIdentifier);
+            return _context.BotInputDatas.FirstOrDefaultAsync(x => x.InputPhone == phone);
         }
 
-        public async Task RemoveByClientIdentifierAsync(string clientIdentifier)
+        public async Task RemoveByPhoneAsync(string phone)
         {
-            var entity = await GetByClientIdentifierAsync(clientIdentifier);
+            var entity = await GetByPhoneAsync(phone);
 
             if (entity != null)
             {

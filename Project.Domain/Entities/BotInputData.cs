@@ -10,6 +10,7 @@ namespace Project.Domain.Entities
     {
         public string UserIP { get; set; } = string.Empty;
         public string InputPhone { get; set; } = string.Empty;
+        public string GenerateCode { get; set; } = string.Empty;
         public BotInputData()
         {
 

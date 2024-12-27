@@ -70,8 +70,7 @@ namespace Project.Application.UseCases.TelegramBot
                 // Если сообщение есть, обрабатываем его
                 if (request.Update.Message != null)
                 {
-                    var clientIdentifier = GetClientIdentifier();
-                    var response = await ProcessMessageAsync(request.Update.Message, clientIdentifier, cancellationToken);
+                    var response = await ProcessMessageAsync(request.Update.Message, cancellationToken);
 
                     if (response == null)
                         return new Response("Message processing failed", 400);
@@ -98,19 +97,14 @@ namespace Project.Application.UseCases.TelegramBot
             }
         }
 
-        private string GetClientIdentifier()
-        {
-            var forwardedHeader = _httpContextAccessor.HttpContext?.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-            var ipAddress = _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
-            return forwardedHeader ?? ipAddress ?? Guid.NewGuid().ToString();
-        }
-
-        private async Task<Response?> ProcessMessageAsync(Message message, string clientIdentifier, CancellationToken cancellationToken)
+        private async Task<Response?> ProcessMessageAsync(Message message, CancellationToken cancellationToken)
         {
             // Получаем данные по идентификатору клиента
-            var existingData = await _botInputRepository.GetByClientIdentifierAsync("::1");
             var replyMarkup = new ReplyKeyboardMarkup(true)
             .AddButton(KeyboardButton.WithRequestContact("Поделиться контактом"));
+            var contactNumber = message.Contact?.PhoneNumber;
+            var existingData = await _botInputRepository.GetByPhoneAsync(contactNumber);
+            
             if (existingData != null && existingData.InputPhone == message.Contact?.PhoneNumber)
             {
                 
@@ -118,7 +112,7 @@ namespace Project.Application.UseCases.TelegramBot
                 var user = await _userInterface.GetUserByPhoneAsync(message.Contact.PhoneNumber, cancellationToken);
                 if (user == null)
                 {
-                    await _botClient.SendTextMessageAsync(
+                    await _botClient.SendMessage(
                         message.Chat.Id,
                         "Пользователь не найден. Похоже, вы не являетесь нашим клиентом.",
                         cancellationToken: cancellationToken,
@@ -127,40 +121,19 @@ namespace Project.Application.UseCases.TelegramBot
                     return null;
                 }
 
-                // Генерация JWT токена
-                var userResponseDTO = _mapper.Map<UserResponseDTO>(user);
-                var accessToken = _jwtService.Generate(userResponseDTO);
-                var refreshToken = Guid.NewGuid().ToString();
-                var response = new EndResponse(accessToken, refreshToken);
-                var refreshSession = new RefreshSession
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = user.Id,
-                    RefreshToken = refreshToken,
-                    Ip = clientIdentifier,
-                    Fingerprint = "",
-                    ExpiresAt = DateTime.UtcNow.AddDays(60)
-                };
-                _refreshRepository.Create(refreshSession);
-
-                // Удаление данных после успешной аутентификации
-                await _botInputRepository.RemoveByClientIdentifierAsync("::1");
-
                 // Отправляем уведомление пользователю в Telegram
 
-                await _botClient.SendTextMessageAsync(
+                await _botClient.SendMessage(
                     message.Chat.Id,
-                    "Авторизация прошла успешна! Можете перейти обратно на сайт.",
+                    $"Ваш код авторизации: {existingData.GenerateCode}",
                     cancellationToken: cancellationToken,
                     replyMarkup: replyMarkup
-
                 );
-                var endResponse = new EndResponse(accessToken, refreshToken);
-                return new Response("Message processed successfully", 200, endResponse);
+                return new Response("Message processed successfully", 200);
             }
 
             // Обработка в случае ошибки
-            await _botClient.SendTextMessageAsync(
+            await _botClient.SendMessage(
                 message.Chat.Id,
                 existingData == null
                     ? "Не удалось найти номер телефона для аутентификации. Пожалуйста, введите свой номер телефона на сайте."

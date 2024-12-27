@@ -22,6 +22,9 @@ namespace Project.Infrastructure.Repositories
             return _context.refreshSessions.FirstOrDefault(x => x.RefreshToken == refreshToken);
         }
 
-        
+        public async Task<RefreshSession?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            return _context.refreshSessions.FirstOrDefault(x => x.UserId == userId);
+        }
     }
 }

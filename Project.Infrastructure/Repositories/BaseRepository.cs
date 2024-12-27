@@ -23,6 +23,7 @@ namespace Project.Infrastructure.Repositories
         {
             entity.DateCreated = DateTimeOffset.UtcNow;
             appDbContext.Add(entity);
+
         }
 
         public void Delete(T entity)

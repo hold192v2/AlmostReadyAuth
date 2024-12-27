@@ -1,18 +1,13 @@
 ﻿using MediatR;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Project.Application.DTOs;
 using Project.Application.UseCases.Authentication;
 using Project.Application.UseCases.Create;
 using Project.Application.UseCases.RefreshToken;
 using Project.Application.UseCases.TelegramBot;
-using Project.Domain.Entities;
 using Project.Domain.Interfaces;
 using Project.Domain.Security;
-using Project.Infrastructure.Repositories;
-using System.Threading;
 using Telegram.Bot;
-using Telegram.Bot.Requests.Abstractions;
 using Telegram.Bot.Types;
 using WebAPI.Extentions;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
@@ -39,14 +34,14 @@ namespace WebAPI.Controllers
         {
             var response = await _mediator.Send(request, cancellationToken);
             if (response is null) return BadRequest();
-            Response.Cookies.Append("refreshToken", response.Data.RefreshToken, new CookieOptions
+            Response.Cookies.Append($"refreshToken_{Guid.NewGuid().ToString()}", response.Data.RefreshToken, new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.Strict,
                 MaxAge = TimeSpan.FromDays(60),
                 Path = "/auth"
-            });
+            }); 
             return Ok(new { response.Data.AccessToken });
         }
 
@@ -79,6 +74,7 @@ namespace WebAPI.Controllers
             if (response is null) return BadRequest();
             return Ok(response);
         }
+
         [HttpPost("bot")]
         public async Task<IActionResult> Bot(
         [FromBody] Update request,
@@ -97,20 +93,7 @@ namespace WebAPI.Controllers
                 var telegramRequest = new TelegramBotRequest(request, secretToken, cancellation);
 
                 var response = await _mediator.Send(telegramRequest, cancellation);
-
-                if (response.Data is EndResponse endResponse)
-                {
-                    Response.Cookies.Append("refreshToken", response.Data.RefreshToken, new CookieOptions
-                    {
-                        HttpOnly = true,
-                        Secure = true,
-                        SameSite = SameSiteMode.Strict,
-                        MaxAge = TimeSpan.FromDays(60),
-                        Path = "/auth"
-                    });
-                    return Ok(new { response.Data.AccessToken });
-                }
-                return Ok("Just message.");
+                return Ok("Message.");
             }
             catch (Exception ex)
             {
@@ -118,28 +101,17 @@ namespace WebAPI.Controllers
             }
         }
 
-        [HttpGet("setWebhook")]
-        public async Task<IActionResult> SetWebhook([FromServices] ITelegramBotClient bot, CancellationToken ct)
+        [HttpPost("setPhone")]
+        public async Task<IActionResult> SetPhone([FromServices] ITelegramBotClient bot, [FromBody] PhoneDTO request, CancellationToken ct)
         {
             var webhookUrl = BotConfiguration.Secrets.BotWebhookUrl.AbsoluteUri;
             await bot.SetWebhook(webhookUrl, allowedUpdates: [], secretToken: BotConfiguration.Secrets.SecretToken, cancellationToken: ct);
+            var ipAddress = _httpContextAccessor.HttpContext.GetClientIp();
+            var generateCode = CodeGenerator.GenerateCode().ToString();
             try
             {
-                return Ok($"Webhook set to {webhookUrl} and phone number saved.");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Failed to save phone number: {ex.Message}");
-            }
-        }
-        [HttpPost("setPhone")]
-        public async Task<IActionResult> SetPhone([FromBody] PhoneDTO request)
-        {
-            var ipAdress = _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
-            try
-            {
-                await _botInputRepository.SavePhoneNumberAsync(request.Phone, ipAdress);
-
+                await _botInputRepository.SavePhoneNumberAsync(request.Phone, ipAddress, generateCode);
+                
                 return Ok();
             }
             catch (Exception ex)
@@ -147,7 +119,6 @@ namespace WebAPI.Controllers
                 return StatusCode(500, $"Failed to save phone number: {ex.Message}");
             }
         }
-
 
     }
    

@@ -11,7 +11,8 @@ namespace Project.Application.UseCases.Authentication
     public record AuthenticationRequest(
     
         string Phone,
-        string Password,
+        string? Password,
+        string? Code,
         string Ip,
         string Fingerprint
         ) :

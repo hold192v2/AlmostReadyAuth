@@ -12,8 +12,9 @@ namespace Project.Application.UseCases.Authentication
     {
         public AuthenticationValidator() 
         { 
-            RuleFor(x => x.Phone).MinimumLength(3).MaximumLength(100).NotEmpty();
-            RuleFor(x => x.Password).MinimumLength(3).MaximumLength(100).NotEmpty();
+            RuleFor(x => x.Phone).MinimumLength(12).MaximumLength(12).NotEmpty();
+            RuleFor(x => x.Password).MinimumLength(3).MaximumLength(100);
+            RuleFor(x => x.Code).MinimumLength(6).MaximumLength(6);
 
         }
     }

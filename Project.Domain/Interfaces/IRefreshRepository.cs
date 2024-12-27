@@ -10,5 +10,6 @@ namespace Project.Domain.Interfaces
     public interface IRefreshRepository : IBaseOperationRepository<RefreshSession>
     {
         Task<RefreshSession?> GetByTokenAsync(string refreshToken, CancellationToken cancellationToken);
+        Task<RefreshSession?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken);
     }
 }
