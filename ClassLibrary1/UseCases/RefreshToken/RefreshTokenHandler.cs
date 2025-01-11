@@ -34,7 +34,7 @@ namespace Project.Application.UseCases.RefreshToken
             try
             {
                 session = await _refreshRepository.GetByTokenAsync(request.RefreshToken, cancellationToken);
-                if (session is null || session.Fingerprint != request.Fingerprint)
+                if (session is null)
                 {
                     if (session.ExpiresAt <= DateTime.UtcNow)
                         _refreshRepository.Delete(session);
@@ -58,7 +58,7 @@ namespace Project.Application.UseCases.RefreshToken
             }
             UserResponseDTO userResponseDTO = _mapper.Map<UserResponseDTO>(user);
             var accessToken = _jwtService.Generate(userResponseDTO);
-            var responce = new EndResponse(accessToken, session.RefreshToken);
+            var responce = new EndResponse(accessToken, session.RefreshToken, null);
             return new Response("Token Refreshed", 200, responce);
         }
     }

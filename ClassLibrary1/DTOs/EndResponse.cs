@@ -6,5 +6,5 @@ using System.Threading.Tasks;
 
 namespace Project.Application.DTOs
 {
-    public record EndResponse(string AccessToken, string RefreshToken);
+    public record EndResponse(string AccessToken, string RefreshToken, Guid? userId);
 }

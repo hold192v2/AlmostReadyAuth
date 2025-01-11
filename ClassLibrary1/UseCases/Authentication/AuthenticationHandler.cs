@@ -83,8 +83,6 @@ namespace Project.Application.UseCases.Authentication
                         Id = Guid.NewGuid(),
                         UserId = user.Id,
                         RefreshToken = refreshToken,
-                        Ip = request.Ip,
-                        Fingerprint = request.Fingerprint,
                         ExpiresAt = DateTime.UtcNow.AddDays(60)
                     };
                     _refreshRepository.Create(refreshSession);
@@ -97,7 +95,7 @@ namespace Project.Application.UseCases.Authentication
                 return new Response("Internal Server Error", 500);
             }
             
-            var response = new EndResponse(accessToken, refreshToken);
+            var response = new EndResponse(accessToken, refreshToken, user.Id);
             
             try
             {

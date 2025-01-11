@@ -1,13 +1,18 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
 using Project.Application.DTOs;
 using Project.Application.UseCases.Authentication;
 using Project.Application.UseCases.Create;
+using Project.Application.UseCases.Logout;
 using Project.Application.UseCases.RefreshToken;
 using Project.Application.UseCases.TelegramBot;
 using Project.Domain.Interfaces;
 using Project.Domain.Security;
+using System.IdentityModel.Tokens.Jwt;
 using Telegram.Bot;
+using Telegram.Bot.Requests.Abstractions;
 using Telegram.Bot.Types;
 using WebAPI.Extentions;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
@@ -33,8 +38,9 @@ namespace WebAPI.Controllers
         public async Task<IActionResult> Authentication([FromBody] AuthenticationRequest request, CancellationToken cancellationToken)
         {
             var response = await _mediator.Send(request, cancellationToken);
+            var handler = new JwtSecurityTokenHandler();
             if (response is null) return BadRequest();
-            Response.Cookies.Append($"refreshToken_{Guid.NewGuid().ToString()}", response.Data.RefreshToken, new CookieOptions
+            Response.Cookies.Append($"refreshToken_{response.Data.userId.ToString()}", response.Data.RefreshToken, new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
@@ -119,6 +125,40 @@ namespace WebAPI.Controllers
             }
         }
 
+        [Authorize]
+        [HttpPost("logout")]
+
+        public async Task<IActionResult> Logout(CancellationToken cancellationToken)
+        {
+            if (!_httpContextAccessor.HttpContext.User.Identity.IsAuthenticated)
+                return Unauthorized("User is not authenticated.");
+
+            // Извлекаем ID пользователя из JWT-токена
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "Id");
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized("Invalid user ID in token.");
+
+            // Проверяем наличие куки с именем "refreshToken_{userId}"
+            string cookieName = $"refreshToken_{userId}";
+            if (!Request.Cookies.TryGetValue(cookieName, out var refreshToken) || string.IsNullOrEmpty(refreshToken))
+                return BadRequest($"No refresh token found for session.");
+
+
+
+            // Удаляем найденную сессию
+            await _mediator.Send(new LogoutRequest(userId), cancellationToken);
+
+            // Удаляем соответствующий refresh-токен из cookies
+            Response.Cookies.Delete(cookieName, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Path = "/auth"
+            });
+
+            return Ok($"Session successfully logged out.");
+        }
     }
    
 }

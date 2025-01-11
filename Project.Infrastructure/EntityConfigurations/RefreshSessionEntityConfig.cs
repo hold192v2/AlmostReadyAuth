@@ -19,8 +19,6 @@ namespace Project.Infrastructure.EntityConfigurations
                 .IsRequired(true);
             builder.Property(x => x.RefreshToken)
                    .HasColumnName("RefreshToken");
-            builder.Property(x => x.Ip)
-                   .HasColumnName("Ip");
 
 
 

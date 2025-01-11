@@ -28,7 +28,6 @@ namespace Project.Infrastructure.Repositories
         public Task<User?> GetUserByPhoneAsync(string phone, CancellationToken cancellationToken)
         {
             return _context.Users
-                .Include(x => x.Roles)
                 .FirstOrDefaultAsync(x => x.PhoneNumber == phone, cancellationToken);
         }
         //Выдает пользователя по refresh токену
