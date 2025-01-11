@@ -106,11 +106,10 @@ namespace WebAPI.Controllers
         {
             var webhookUrl = BotConfiguration.Secrets.BotWebhookUrl.AbsoluteUri;
             await bot.SetWebhook(webhookUrl, allowedUpdates: [], secretToken: BotConfiguration.Secrets.SecretToken, cancellationToken: ct);
-            var ipAddress = _httpContextAccessor.HttpContext.GetClientIp();
             var generateCode = CodeGenerator.GenerateCode().ToString();
             try
             {
-                await _botInputRepository.SavePhoneNumberAsync(request.Phone, ipAddress, generateCode);
+                await _botInputRepository.SavePhoneNumberAsync(request.Phone, generateCode);
                 
                 return Ok();
             }

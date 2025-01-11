@@ -12,16 +12,18 @@ using Project.Domain.Interfaces;
 using Project.Infrastructure.Repositories;
 using Project.Application.Interfaces;
 using Project.Application.Services;
+using Hangfire;
+using Project.Infrastructure.RabbitMQMessaging;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.AddConfiguration();
+builder.Services.AddHangfireServer();
 builder.Services.AddHttpClient("tgwebhook").RemoveAllLoggers().AddTypedClient<ITelegramBotClient>(
     httpClient => new TelegramBotClient(BotConfiguration.Secrets.BotToken, httpClient));
 builder.Services.ConfigureTelegramBotMvc();
 builder.Services.AddScoped<IJwtService, JwtService>();
-
 builder.Services.AddControllers();
 builder.Services.ConfigurePresistanceApp(builder.Configuration);
 

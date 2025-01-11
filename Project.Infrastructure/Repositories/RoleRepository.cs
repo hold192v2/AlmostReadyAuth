@@ -17,9 +17,9 @@ namespace Project.Infrastructure.Repositories
             {
                 _context = context;
             }
-        public async Task<List<Role>> GetRoles(List<Guid> ids)
+        public async Task<List<Role>> GetRoles(List<string> ids)
         {
-            return await _context.Roles.Where(x => ids.Contains(x.Id)).ToListAsync();
+            return await _context.Roles.Where(x => ids.Contains(x.Id.ToString())).ToListAsync();
         }
 
 

@@ -17,8 +17,6 @@ namespace Project.Application.DTOs
         public string PassportData { get; set; } = string.Empty;
         public decimal Balance { get; set; } = 0;
         public bool Status { get; set; } = false;
-        public string? Token { get; set; }
         public List<RoleResponseDTO> Roles { get; set; } = new();
-        public Guid RefreshToken { get; set; }
     }
 }

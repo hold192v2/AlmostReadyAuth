@@ -9,6 +9,6 @@ namespace Project.Domain.Interfaces
 {
     public interface IRoleRepository : IBaseOperationRepository<Role>
     {
-        Task<List<Role>> GetRoles(List<Guid> ids);
+        Task<List<Role>> GetRoles(List<string> ids);
     }
 }

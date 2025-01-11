@@ -34,7 +34,7 @@ namespace Project.Application.UseCases.RefreshToken
             try
             {
                 session = await _refreshRepository.GetByTokenAsync(request.RefreshToken, cancellationToken);
-                if (session is null || session.ExpiresAt <= DateTime.UtcNow || session.Fingerprint != request.Fingerprint)
+                if (session is null || session.Fingerprint != request.Fingerprint)
                 {
                     if (session.ExpiresAt <= DateTime.UtcNow)
                         _refreshRepository.Delete(session);

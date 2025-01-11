@@ -19,16 +19,14 @@ namespace Project.Infrastructure.Repositories
         {
             this.appDbContext = appDbContext;
         }
-        public void Create(T entity)
+        public virtual void Create(T entity)
         {
-            entity.DateCreated = DateTimeOffset.UtcNow;
             appDbContext.Add(entity);
 
         }
 
         public void Delete(T entity)
         {
-            entity.DateDeleted = DateTimeOffset.UtcNow;
             appDbContext.Remove(entity);
         }
 
@@ -44,7 +42,6 @@ namespace Project.Infrastructure.Repositories
 
         public void Update(T entity)
         {
-            entity.DateUpdated = DateTimeOffset.UtcNow;
             appDbContext.Update(entity);
         }
     }

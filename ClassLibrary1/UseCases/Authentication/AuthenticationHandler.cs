@@ -16,6 +16,7 @@ namespace Project.Application.UseCases.Authentication
 {
     public class AuthenticationHandler : IRequestHandler<AuthenticationRequest, Response>
     {
+        //private readonly RabbitMQListener;
         private readonly IUserInterface _userInterface;
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
@@ -32,6 +33,7 @@ namespace Project.Application.UseCases.Authentication
             _jwtService = jwtService;
             _refreshRepository = refreshRepository;
             _botTelegram = botTelegram;
+            
             
         }
 
@@ -59,10 +61,11 @@ namespace Project.Application.UseCases.Authentication
                     return new Response("Password dont match", 404);
                 }
             }
-            else if (request.Password is null || botInputData is null)
+            else if (request.Password is null || botInputData is not null)
             {
                 if (request.Code != botInputData.GenerateCode)
                     return new Response("You enter wrong code.", 404);
+                _botTelegram.Delete(botInputData);
             }
             
             RefreshSession? refreshSession;

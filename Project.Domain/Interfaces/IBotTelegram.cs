@@ -10,8 +10,9 @@ namespace Project.Domain.Interfaces
 {
     public interface IBotTelegram : IBaseOperationRepository<BotInputData>
     {
-        Task SavePhoneNumberAsync(string phoneNumber, string clientIdentifier, string generateCode);
-        Task<BotInputData?> GetByPhoneAsync(string clientIdentifier);
-        Task RemoveByPhoneAsync(string clientIdentifier);
+        Task SavePhoneNumberAsync(string phoneNumber, string generateCode);
+        Task<BotInputData?> GetByPhoneAsync(string phone);
+        Task RemoveByPhoneAsync(string phone);
+        public void DeleteAuthCode(Guid authCodeId);
     }
 }

@@ -7,6 +7,7 @@ namespace WebAPI.Controllers
     [Route("project")]
     public class ProjectController : ControllerBase
     {
+
         [HttpGet("user")]
         [Authorize(Roles = "USER")]
         public ActionResult User()

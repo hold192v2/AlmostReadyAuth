@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Hangfire;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Project.Domain.Entities;
 using Project.Domain.Interfaces;
 using Project.Infrastructure.Context;
@@ -17,24 +19,29 @@ namespace Project.Infrastructure.Repositories
     public class BotInputRepository : BaseRepository<BotInputData>, IBotTelegram
     {
         private readonly AppDbContext _context;
+        private readonly IBackgroundJobClient _backgroundJobClient;
 
-        public BotInputRepository(AppDbContext context) : base(context)
+        public BotInputRepository(AppDbContext context, IBackgroundJobClient backgroundJobClient) : base(context)
         {
             _context = context;
+            _backgroundJobClient = backgroundJobClient;
         }
 
-        public async Task SavePhoneNumberAsync(string phoneNumber, string clientIdentifier, string generateCode)
+        public async Task SavePhoneNumberAsync(string phoneNumber, string generateCode)
         {
             var data = new BotInputData
             {
                 Id = Guid.NewGuid(),
-                UserIP = clientIdentifier,
+                DateCreated = DateTimeOffset.UtcNow,
+                DateUpdated = DateTimeOffset.UtcNow,
                 InputPhone = phoneNumber,
                 GenerateCode = generateCode
             };
 
-            await _context.BotInputDatas.AddAsync(data);
+            Create(data);
             await _context.SaveChangesAsync();
+
+            _backgroundJobClient.Schedule(() => DeleteAuthCode(data.Id), TimeSpan.FromMinutes(2));
         }
 
         public Task<BotInputData?> GetByPhoneAsync(string phone)
@@ -52,5 +59,19 @@ namespace Project.Infrastructure.Repositories
                 await _context.SaveChangesAsync();
             }
         }
+
+        public void DeleteAuthCode(Guid authCodeId)
+        {
+            var botInputData = _context.BotInputDatas.Find(authCodeId);
+            if (botInputData != null)
+            {
+                // Устанавливаем DateDeleted в текущее время вместо физического удаления
+                Delete(botInputData);
+                _context.SaveChanges();
+            }
+
+        }
+
+
     }
 }

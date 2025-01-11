@@ -121,7 +121,7 @@ namespace Project.Application.UseCases.TelegramBot
                     return null;
                 }
 
-                // Отправляем уведомление пользователю в Telegram
+                // Отправляем уведомление с кодом авторизации пользователю в Telegram
 
                 await _botClient.SendMessage(
                     message.Chat.Id,
@@ -132,12 +132,12 @@ namespace Project.Application.UseCases.TelegramBot
                 return new Response("Message processed successfully", 200);
             }
 
-            // Обработка в случае ошибки
+            // Обработка в случае первого ввода сообщения || ввода неверного номера телефона
             await _botClient.SendMessage(
                 message.Chat.Id,
                 existingData == null
-                    ? "Не удалось найти номер телефона для аутентификации. Пожалуйста, введите свой номер телефона на сайте."
-                    : "Номер телефона не совпадает. Пожалуйста, укажите правильный номер.",
+                    ? "Добрый день!\nНажмите на кнопку поделиться контактом, чтобы мы могли прислать вам код."
+                    : "Номер телефона не совпадает. Возможно это не ваш основной телеграмм аккаунт?",
                 cancellationToken: cancellationToken,
                 replyMarkup: replyMarkup
             );
