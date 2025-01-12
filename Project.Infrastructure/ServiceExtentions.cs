@@ -3,10 +3,14 @@ using Hangfire.PostgreSql;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Project.Application.DTOs;
+using Project.Application.Interfaces;
 using Project.Domain.Interfaces;
 using Project.Infrastructure.Context;
+using Project.Infrastructure.RabbitMQMessaging;
 using Project.Infrastructure.Repositories;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -24,11 +28,11 @@ namespace Project.Infrastructure
             services.AddHangfire(config =>
         config.UsePostgreSqlStorage(connectionString));
 
+            services.AddScoped<IRabbitPublisher, RabbitMQPublisher>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
-            services.AddScoped<IUserInterface, UserRepository>();
-            services.AddScoped<IRoleRepository, RoleRepository>();
             services.AddScoped<IBotTelegram, BotInputRepository>();
             services.AddScoped<IRefreshRepository, RefreshRepository>();
+            services.AddSingleton<ConcurrentDictionary<string, UserResponseDTO>>();
             //services.AddScoped<IRabbitMqService, RabbitMqService>();
         }
     }

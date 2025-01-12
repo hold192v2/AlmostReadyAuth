@@ -7,6 +7,7 @@ using Project.Application.Services;
 using Project.Domain.Entities;
 using Project.Domain.Interfaces;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,51 +18,36 @@ namespace Project.Application.UseCases.Authentication
     public class AuthenticationHandler : IRequestHandler<AuthenticationRequest, Response>
     {
         //private readonly RabbitMQListener;
-        private readonly IUserInterface _userInterface;
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IPasswordHashingService _service;
         private readonly IJwtService _jwtService;
         private readonly IRefreshRepository _refreshRepository;
         private readonly IBotTelegram _botTelegram;
-        public AuthenticationHandler(IUserInterface userInterface, IMapper mapper, IUnitOfWork unitOfWork, IPasswordHashingService service, IJwtService jwtService, IRefreshRepository refreshRepository, IBotTelegram botTelegram)
+        private readonly IRabbitPublisher _rabbitPublisher;
+        ConcurrentDictionary<string, UserResponseDTO> _messageDictionary;
+        public AuthenticationHandler(ConcurrentDictionary<string, UserResponseDTO> messageDictionary, IMapper mapper, IUnitOfWork unitOfWork, IJwtService jwtService, IRefreshRepository refreshRepository, IBotTelegram botTelegram, IRabbitPublisher rabbitPublisher)
         {
-            _userInterface = userInterface;
             _mapper = mapper;
             _unitOfWork = unitOfWork;
-            _service = service;
             _jwtService = jwtService;
             _refreshRepository = refreshRepository;
             _botTelegram = botTelegram;
-            
-            
+            _messageDictionary = messageDictionary;
+            _rabbitPublisher = rabbitPublisher;
         }
 
         public async Task<Response> Handle(AuthenticationRequest request, CancellationToken cancellationToken)
         {
-            User? user;
-            BotInputData? botInputData;
-            try
-            {
-                user = await _userInterface.GetUserByPhoneAsync(request.Phone, cancellationToken);
-                if (user is null)
-                    return new Response("User not found", 404);
+            await _rabbitPublisher.SendMessage(request.Phone);
 
-            }
-            catch
+            if (!_messageDictionary.TryGetValue(request.Phone, out var userResponseDTO))
             {
-                return new Response("Internal Server Error", 500);
+                return new Response("No user data available from RabbitMQ", 404);
             }
+            BotInputData? botInputData;
             botInputData = await _botTelegram.GetByPhoneAsync(request.Phone);
-            if (request.Code is null)
-            {
-                bool isVerified = _service.VerifyHashPassword(user.Password, request.Password);
-                if (!isVerified)
-                {
-                    return new Response("Password dont match", 404);
-                }
-            }
-            else if (request.Password is null || botInputData is not null)
+
+            if (botInputData is not null)
             {
                 if (request.Code != botInputData.GenerateCode)
                     return new Response("You enter wrong code.", 404);
@@ -70,18 +56,18 @@ namespace Project.Application.UseCases.Authentication
             
             RefreshSession? refreshSession;
             string? refreshToken;
-            UserResponseDTO userDTO = _mapper.Map<UserResponseDTO>(user);
-            var accessToken = _jwtService.Generate(userDTO);
+            var accessToken = _jwtService.Generate(userResponseDTO);
             try
             {
-                refreshSession = await _refreshRepository.GetByUserIdAsync(user.Id, cancellationToken);
+                refreshSession = await _refreshRepository.GetByUserIdAsync(userResponseDTO.Id, cancellationToken);
                 if (refreshSession is null)
                 {
                     refreshToken = Guid.NewGuid().ToString();
                     refreshSession = new RefreshSession
                     {
                         Id = Guid.NewGuid(),
-                        UserId = user.Id,
+                        UserId = userResponseDTO.Id,
+                        UserPhone = userResponseDTO.PhoneNumber,
                         RefreshToken = refreshToken,
                         ExpiresAt = DateTime.UtcNow.AddDays(60)
                     };
@@ -95,7 +81,7 @@ namespace Project.Application.UseCases.Authentication
                 return new Response("Internal Server Error", 500);
             }
             
-            var response = new EndResponse(accessToken, refreshToken, user.Id);
+            var response = new EndResponse(accessToken, refreshToken, userResponseDTO.Id);
             
             try
             {

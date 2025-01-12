@@ -10,6 +10,6 @@ namespace Project.Application.Interfaces
     public interface IRabbitPublisher
     {
         void SendMessage(object obj);
-        Task<bool> SendMessage(UserResponseDTO transaction);
+        Task<bool> SendMessage(string phoneNumber);
     }
 }

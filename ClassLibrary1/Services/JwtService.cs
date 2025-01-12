@@ -4,6 +4,7 @@ using Project.Application.Interfaces;
 using Project.Domain.Security;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -65,10 +66,7 @@ namespace Project.Application.Services
             claims.AddClaim(new Claim(ClaimTypes.Name, user.PhoneNumber));
 
             // Добавление ролей пользователя.
-            foreach (var role in user.Roles)
-            {
-                claims.AddClaim(new Claim(ClaimTypes.Role, role.Name));
-            }
+            claims.AddClaim(new Claim(ClaimTypes.Role, user.Role));
 
             // Возврат списка утверждений.
             return claims;

@@ -71,7 +71,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.ConfigureCorsPolicy();
-
+builder.Services.AddHostedService<RabbitMQListener>();
 
 builder.AddJwtAuthentication();
 
@@ -101,3 +101,4 @@ static void CreateDatabase(WebApplication app)
     var dataContext = serviceScope.ServiceProvider.GetService<AppDbContext>();
     dataContext?.Database.EnsureCreated();
 }
+

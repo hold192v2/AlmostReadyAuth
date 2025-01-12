@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using Project.Application.DTOs;
 using Project.Application.UseCases.Authentication;
-using Project.Application.UseCases.Create;
 using Project.Application.UseCases.Logout;
 using Project.Application.UseCases.RefreshToken;
 using Project.Application.UseCases.TelegramBot;
@@ -73,13 +72,6 @@ namespace WebAPI.Controllers
             return Ok(new { response.Data.AccessToken });
         }
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Create([FromBody] CreateUserRequest request, CancellationToken cancellation)
-        {
-            var response = await _mediator.Send(request, cancellation);
-            if (response is null) return BadRequest();
-            return Ok(response);
-        }
 
         [HttpPost("bot")]
         public async Task<IActionResult> Bot(

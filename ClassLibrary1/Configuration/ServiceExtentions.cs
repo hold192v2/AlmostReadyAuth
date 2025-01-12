@@ -18,7 +18,6 @@ namespace Project.Application.Configuration
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-            services.AddScoped<IPasswordHashingService, PasswordHashingService>();
         }
     }
 }

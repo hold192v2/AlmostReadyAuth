@@ -29,10 +29,7 @@ namespace WebAPI.Extentions
             var claims = new ClaimsIdentity();
             claims.AddClaim(new Claim("Id", user.Id.ToString()));
             claims.AddClaim(new Claim(ClaimTypes.Name, user.PhoneNumber));
-            foreach (var role in user.Roles)
-            {
-                claims.AddClaim(new Claim(ClaimTypes.Role, role.Name));
-            }
+            claims.AddClaim(new Claim(ClaimTypes.Role, user.Role));
             return claims;
         }
     }

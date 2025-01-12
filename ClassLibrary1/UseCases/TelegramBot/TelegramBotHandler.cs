@@ -21,13 +21,13 @@ using AutoMapper;
 using Project.Domain.Entities;
 using Telegram.Bot.Requests.Abstractions;
 using Project.Application.Interfaces;
+using System.Collections.Concurrent;
 
 namespace Project.Application.UseCases.TelegramBot
 {
     public class TelegramBotHandler : IRequestHandler<TelegramBotRequest, Response>
     {
         private readonly IMapper _mapper;
-        private readonly IUserInterface _userInterface;
         private readonly ITelegramBotClient _botClient;
         private readonly IBotTelegram _botInputRepository;
         private readonly IUnitOfWork _unitOfWork;
@@ -36,20 +36,20 @@ namespace Project.Application.UseCases.TelegramBot
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IJwtService _jwtService;
         private readonly IRefreshRepository _refreshRepository;
+        private readonly IRabbitPublisher _rabbitPublisher;
+        private readonly ConcurrentDictionary<string, UserResponseDTO> _messageDictionary;
 
         public TelegramBotHandler(
             IMapper mapper,
-            IUserInterface userInterface,
             ITelegramBotClient botClient,
             IBotTelegram botInputRepository,
             IUnitOfWork unitOfWork,
             IOptions<BotSecretsConfiguration> config,
             IHttpContextAccessor httpContextAccessor,
             IJwtService jwtService,
-            IRefreshRepository refreshRepository)
+            IRefreshRepository refreshRepository, IRabbitPublisher rabbitPublisher, ConcurrentDictionary<string, UserResponseDTO> messageDictionary)
         {
             _mapper = mapper;
-            _userInterface = userInterface;
             _botClient = botClient;
             _botInputRepository = botInputRepository;
             _unitOfWork = unitOfWork;
@@ -57,6 +57,8 @@ namespace Project.Application.UseCases.TelegramBot
             _httpContextAccessor = httpContextAccessor;
             _jwtService = jwtService;
             _refreshRepository = refreshRepository;
+            _rabbitPublisher = rabbitPublisher;
+            _messageDictionary = messageDictionary;
         }
 
         public async Task<Response> Handle(TelegramBotRequest request, CancellationToken cancellationToken)
@@ -104,13 +106,18 @@ namespace Project.Application.UseCases.TelegramBot
             .AddButton(KeyboardButton.WithRequestContact("Поделиться контактом"));
             var contactNumber = message.Contact?.PhoneNumber;
             var existingData = await _botInputRepository.GetByPhoneAsync(contactNumber);
-            
+
             if (existingData != null && existingData.InputPhone == message.Contact?.PhoneNumber)
             {
-                
+                await _rabbitPublisher.SendMessage(message.Contact?.PhoneNumber);
+
+                if (!_messageDictionary.TryGetValue(message.Contact?.PhoneNumber, out var userResponseDTO))
+                {
+                    return new Response("No user data available from RabbitMQ", 404);
+                }
+
                 // Генерация токена после подтверждения номера
-                var user = await _userInterface.GetUserByPhoneAsync(message.Contact.PhoneNumber, cancellationToken);
-                if (user == null)
+                if (userResponseDTO == null)
                 {
                     await _botClient.SendMessage(
                         message.Chat.Id,
@@ -135,9 +142,9 @@ namespace Project.Application.UseCases.TelegramBot
             // Обработка в случае первого ввода сообщения || ввода неверного номера телефона
             await _botClient.SendMessage(
                 message.Chat.Id,
-                existingData == null
+                contactNumber == null
                     ? "Добрый день!\nНажмите на кнопку поделиться контактом, чтобы мы могли прислать вам код."
-                    : "Номер телефона не совпадает. Возможно это не ваш основной телеграмм аккаунт?",
+                    : "Что-то пошло не так!\nПопробуйте ввести правильный номер телефона на сайте.",
                 cancellationToken: cancellationToken,
                 replyMarkup: replyMarkup
             );

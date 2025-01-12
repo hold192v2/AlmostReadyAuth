@@ -12,7 +12,7 @@ namespace Project.Infrastructure.RabbitMQMessaging
 {
     public class RabbitMQPublisher : IRabbitPublisher
     {
-        private readonly Uri _uri = new Uri("amqps://akmeanzg:TMOCQxQAEWZjfE0Y7wH5v0TN_XTQ9Xfv@mouse.rmq5.cloudamqp.com/akmeanzg");
+        private readonly Uri _uri = new Uri("amqps://oqthqqzy:WWOWApSprfKB45g2Uc6ZeT-_W2mckisr@albatross.rmq.cloudamqp.com/oqthqqzy");
 
         public void SendMessage(object obj)
         {
@@ -20,7 +20,7 @@ namespace Project.Infrastructure.RabbitMQMessaging
             SendMessage(message);
         }
 
-        public async Task<bool> SendMessage(UserResponseDTO transaction)
+        public async Task<bool> SendMessage(string phoneNumber)
         {
             var factory = new ConnectionFactory() { Uri = _uri };
             using var connection = await factory.CreateConnectionAsync();
@@ -37,12 +37,12 @@ namespace Project.Infrastructure.RabbitMQMessaging
             await channel.ExchangeDeclareAsync(exchange: "UserAuthConnection", type: ExchangeType.Topic);
             var routingKey = "secretKeyTransfer";
 
-            var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(transaction));
+            var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(phoneNumber));
 
             try
             {
                 await channel.BasicPublishAsync(exchange: "UserAuthConnection", routingKey: routingKey, body: body);
-                Console.WriteLine($"[x] sent {transaction}");
+                Console.WriteLine($"[x] sent {phoneNumber}");
                 return true;
             }
 
