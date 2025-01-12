@@ -1,32 +1,33 @@
-version: "3.9"
+version: '3.4'
 
 services:
   webapi:
-    image: ${DOCKER_REGISTRY-}webapi
+    container_name: webapi
+    image: ${DOCKER_REGISTRY-}projectwebapi
     build:
       context: .
       dockerfile: WebAPI/Dockerfile
     ports:
-    - "8443:8080"
-    - "8443:8081"
+      - "8443:8080"
+      - "8442:8081"
 
   migrations:
-    container_name: service-migrations2
+    container_name: service-migrations
     image: service-migrations
     build:
       context: .
-      dockerfile: WebApi/Dockerfile
+      dockerfile: WebAPI/Dockerfile
       target: migrations
     depends_on:
         - postgres
 
   postgres:
-    image: postgres
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=second
-      - POSTGRES_DB=localhost
-    volumes:
-      - ./volumes/data/db:/var/lib/postgresql/data
-    ports:
-       - 5432:5432
+     image: postgres:latest
+     container_name: postgres
+     environment:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: second
+        POSTGRES_DB: localhost
+     ports:
+        - "5432:5432"
+     restart: unless-stopped
