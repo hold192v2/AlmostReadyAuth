@@ -12,7 +12,7 @@ namespace Project.Infrastructure.RabbitMQMessaging
 {
     public class RabbitMQPublisher : IRabbitPublisher
     {
-        private readonly Uri _uri = new Uri("amqps://oqthqqzy:WWOWApSprfKB45g2Uc6ZeT-_W2mckisr@albatross.rmq.cloudamqp.com/oqthqqzy");
+        private readonly Uri _uri = new Uri("amqps://akmeanzg:TMOCQxQAEWZjfE0Y7wH5v0TN_XTQ9Xfv@mouse.rmq5.cloudamqp.com/akmeanzg");
 
         public void SendMessage(object obj)
         {
@@ -34,14 +34,14 @@ namespace Project.Infrastructure.RabbitMQMessaging
                 Persistent = true
             };
 
-            await channel.ExchangeDeclareAsync(exchange: "UserAuthConnection", type: ExchangeType.Topic);
-            var routingKey = "secretKeyTransfer";
+            await channel.ExchangeDeclareAsync(exchange: "TransferAuth", type: ExchangeType.Topic);
+            var routingKey = "secretKeyAuth";
 
             var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(phoneNumber));
 
             try
             {
-                await channel.BasicPublishAsync(exchange: "UserAuthConnection", routingKey: routingKey, body: body);
+                await channel.BasicPublishAsync(exchange: "TransferAuth", routingKey: routingKey, body: body);
                 Console.WriteLine($"[x] sent {phoneNumber}");
                 return true;
             }

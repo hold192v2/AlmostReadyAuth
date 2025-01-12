@@ -17,7 +17,7 @@ namespace Project.Infrastructure.RabbitMQMessaging
 {
     public class RabbitMQListener : BackgroundService
     {
-        private static readonly Uri _uri = new Uri("amqps://oqthqqzy:WWOWApSprfKB45g2Uc6ZeT-_W2mckisr@albatross.rmq.cloudamqp.com/oqthqqzy");
+        private static readonly Uri _uri = new Uri("amqps://akmeanzg:TMOCQxQAEWZjfE0Y7wH5v0TN_XTQ9Xfv@mouse.rmq5.cloudamqp.com/akmeanzg");
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ConcurrentDictionary<string, UserResponseDTO> _messageQueue;
 
@@ -34,13 +34,13 @@ namespace Project.Infrastructure.RabbitMQMessaging
             using var connection = await factory.CreateConnectionAsync();
             using var channel = await connection.CreateChannelAsync();
 
-            await channel.ExchangeDeclareAsync(exchange: "AuthoriseUserConnection", type: ExchangeType.Topic);
+            await channel.ExchangeDeclareAsync(exchange: "sendAuth", type: ExchangeType.Topic);
             var queueDeclareResult = await channel.QueueDeclareAsync(durable: true, exclusive: false,
     autoDelete: false, arguments: null);
 
             await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 1, global: false);
             var queueName = queueDeclareResult.QueueName;
-            await channel.QueueBindAsync(queue: queueName, exchange: "AuthoriseUserConnection", routingKey: "secretKeySendAuth");
+            await channel.QueueBindAsync(queue: queueName, exchange: "sendAuth", routingKey: "secretKeySendAuth");
 
             var consumer = new AsyncEventingBasicConsumer(channel);
             consumer.ReceivedAsync += (model, ea) =>
