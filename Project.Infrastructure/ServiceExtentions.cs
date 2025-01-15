@@ -7,7 +7,7 @@ using Project.Application.DTOs;
 using Project.Application.Interfaces;
 using Project.Domain.Interfaces;
 using Project.Infrastructure.Context;
-using Project.Infrastructure.RabbitMQMessaging;
+using Project.Application.RabbitMQMessaging;
 using Project.Infrastructure.Repositories;
 using System;
 using System.Collections.Concurrent;
@@ -16,6 +16,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot.Polling;
+using Project.Application.UseCases.Authentication;
 
 namespace Project.Infrastructure
 {
@@ -32,7 +33,10 @@ namespace Project.Infrastructure
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IBotTelegram, BotInputRepository>();
             services.AddScoped<IRefreshRepository, RefreshRepository>();
+            services.AddScoped<AuthenticationHandler>();
+            services.AddSingleton<RabbitMQListener>();
             services.AddSingleton<ConcurrentDictionary<string, UserResponseDTO>>();
+            services.AddSingleton<ConcurrentDictionary<string, TaskCompletionSource<UserResponseDTO>>>();
             //services.AddScoped<IRabbitMqService, RabbitMqService>();
         }
     }

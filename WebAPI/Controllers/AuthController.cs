@@ -39,6 +39,7 @@ namespace WebAPI.Controllers
             var response = await _mediator.Send(request, cancellationToken);
             var handler = new JwtSecurityTokenHandler();
             if (response is null) return BadRequest();
+            if(response.Data is null) return BadRequest();
             Response.Cookies.Append($"refreshToken_{response.Data.userId.ToString()}", response.Data.RefreshToken, new CookieOptions
             {
                 HttpOnly = true,

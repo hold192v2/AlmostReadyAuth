@@ -14,13 +14,14 @@ using Microsoft.Extensions.Hosting;
 using System.Collections.Concurrent;
 using System.Threading.Channels;
 
-namespace Project.Infrastructure.RabbitMQMessaging
+namespace Project.Application.RabbitMQMessaging
 {
     public class RabbitMQListener : BackgroundService
     {
         private static readonly Uri _uri = new Uri("amqps://akmeanzg:TMOCQxQAEWZjfE0Y7wH5v0TN_XTQ9Xfv@mouse.rmq5.cloudamqp.com/akmeanzg");
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ConcurrentDictionary<string, UserResponseDTO> _messageQueue;
+        public event Action<string, UserResponseDTO>? MessageReceived;
         private IConnection _connection;
         private IChannel _channel;
 
@@ -50,14 +51,16 @@ namespace Project.Infrastructure.RabbitMQMessaging
             {
                 var body = ea.Body.ToArray();
                 var userResponseDTO = JsonSerializer.Deserialize<UserResponseDTO>(Encoding.UTF8.GetString(body));
+                _channel.BasicAckAsync(ea.DeliveryTag, false);
                 if (userResponseDTO != null)
                 {
-                    _messageQueue[userResponseDTO.PhoneNumber] = userResponseDTO;
+                    MessageReceived?.Invoke(userResponseDTO.PhoneNumber, userResponseDTO);
                 }
+
                 return Task.CompletedTask;
 
             };
-            await _channel.BasicConsumeAsync(queueName, autoAck: true, consumer: consumer);
+            await _channel.BasicConsumeAsync(queueName, autoAck: false, consumer: consumer);
 
             Console.ReadLine();
         }

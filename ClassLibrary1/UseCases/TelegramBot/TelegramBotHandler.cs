@@ -113,6 +113,12 @@ namespace Project.Application.UseCases.TelegramBot
 
                 if (!_messageDictionary.TryGetValue(message.Contact?.PhoneNumber, out var userResponseDTO))
                 {
+                    await _botClient.SendMessage(
+                        message.Chat.Id,
+                        "Пользователь не найден. Похоже, вы не являетесь нашим клиентом.",
+                        cancellationToken: cancellationToken,
+                        replyMarkup: replyMarkup
+                    );
                     return new Response("No user data available from RabbitMQ", 404);
                 }
 

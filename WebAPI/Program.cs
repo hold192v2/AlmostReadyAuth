@@ -13,7 +13,7 @@ using Project.Infrastructure.Repositories;
 using Project.Application.Interfaces;
 using Project.Application.Services;
 using Hangfire;
-using Project.Infrastructure.RabbitMQMessaging;
+using Project.Application.RabbitMQMessaging;
 
 var builder = WebApplication.CreateBuilder(args);
 

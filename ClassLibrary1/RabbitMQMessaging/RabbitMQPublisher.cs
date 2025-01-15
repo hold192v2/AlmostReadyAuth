@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Project.Infrastructure.RabbitMQMessaging
+namespace Project.Application.RabbitMQMessaging
 {
     public class RabbitMQPublisher : IRabbitPublisher
     {

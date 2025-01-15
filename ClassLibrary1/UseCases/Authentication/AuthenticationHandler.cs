@@ -13,6 +13,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using Project.Application.RabbitMQMessaging;
+
 namespace Project.Application.UseCases.Authentication
 {
     public class AuthenticationHandler : IRequestHandler<AuthenticationRequest, Response>
@@ -24,8 +26,9 @@ namespace Project.Application.UseCases.Authentication
         private readonly IRefreshRepository _refreshRepository;
         private readonly IBotTelegram _botTelegram;
         private readonly IRabbitPublisher _rabbitPublisher;
-        ConcurrentDictionary<string, UserResponseDTO> _messageDictionary;
-        public AuthenticationHandler(ConcurrentDictionary<string, UserResponseDTO> messageDictionary, IMapper mapper, IUnitOfWork unitOfWork, IJwtService jwtService, IRefreshRepository refreshRepository, IBotTelegram botTelegram, IRabbitPublisher rabbitPublisher)
+        private readonly ConcurrentDictionary<string, TaskCompletionSource<UserResponseDTO>> _messageDictionary;
+        
+        public AuthenticationHandler(RabbitMQListener rabbitMQListener, ConcurrentDictionary<string, TaskCompletionSource<UserResponseDTO>> messageDictionary, IMapper mapper, IUnitOfWork unitOfWork, IJwtService jwtService, IRefreshRepository refreshRepository, IBotTelegram botTelegram, IRabbitPublisher rabbitPublisher)
         {
             _mapper = mapper;
             _unitOfWork = unitOfWork;
@@ -34,16 +37,29 @@ namespace Project.Application.UseCases.Authentication
             _botTelegram = botTelegram;
             _messageDictionary = messageDictionary;
             _rabbitPublisher = rabbitPublisher;
+
+            rabbitMQListener.MessageReceived += OnRabbitMQMessageReceived;
         }
 
         public async Task<Response> Handle(AuthenticationRequest request, CancellationToken cancellationToken)
         {
-            await _rabbitPublisher.SendMessage(request.Phone);
 
-            if (!_messageDictionary.TryGetValue(request.Phone, out var userResponseDTO))
+            await _rabbitPublisher.SendMessage(request.Phone);
+            var tcs = new TaskCompletionSource<UserResponseDTO>();
+            _messageDictionary[request.Phone] = tcs;
+
+            var delay = Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
+            var completedTask = await Task.WhenAny(tcs.Task, delay);
+
+            if (completedTask == delay)
             {
-                return new Response("No user data available from RabbitMQ", 404);
+                _messageDictionary.TryRemove(request.Phone, out _);
+                return new Response("Timeout waiting for RabbitMQ response", 408);
             }
+
+            var userResponseDTO = await tcs.Task;
+            _messageDictionary.TryRemove(request.Phone, out _);
+
             BotInputData? botInputData;
             botInputData = await _botTelegram.GetByPhoneAsync(request.Phone);
 
@@ -94,6 +110,13 @@ namespace Project.Application.UseCases.Authentication
             return new Response("User authenticated", 200, response);
             
         }
-        
+        private void OnRabbitMQMessageReceived(string phone, UserResponseDTO userResponseDTO)
+        {
+            if (_messageDictionary.TryGetValue(phone, out var tcs))
+            {
+                tcs.TrySetResult(userResponseDTO);
+            }
+        }
+
     }
 }
