@@ -23,10 +23,12 @@ using Telegram.Bot.Requests.Abstractions;
 using Project.Application.Interfaces;
 using System.Collections.Concurrent;
 using ServiceAbonents.Dtos;
+using MassTransit;
+using Response = Project.Application.HadlerResponce.Response;
 
 namespace Project.Application.UseCases.TelegramBot
 {
-    public class TelegramBotHandler : IRequestHandler<TelegramBotRequest, Response>
+    public class TelegramBotHandler : IRequestHandler<TelegramBotRequest, HadlerResponce.Response>
     {
         private readonly IMapper _mapper;
         private readonly ITelegramBotClient _botClient;
@@ -38,7 +40,7 @@ namespace Project.Application.UseCases.TelegramBot
         private readonly IJwtService _jwtService;
         private readonly IRefreshRepository _refreshRepository;
         private readonly IRabbitPublisher _rabbitPublisher;
-        private readonly ConcurrentDictionary<string, TransferForAuthDto> _messageDictionary;
+        private readonly IRequestClient<TransferForAuthRequestDTO> _client;
 
         public TelegramBotHandler(
             IMapper mapper,
@@ -48,7 +50,7 @@ namespace Project.Application.UseCases.TelegramBot
             IOptions<BotSecretsConfiguration> config,
             IHttpContextAccessor httpContextAccessor,
             IJwtService jwtService,
-            IRefreshRepository refreshRepository, IRabbitPublisher rabbitPublisher, ConcurrentDictionary<string, TransferForAuthDto> messageDictionary)
+            IRefreshRepository refreshRepository, IRabbitPublisher rabbitPublisher, IRequestClient<TransferForAuthRequestDTO> client)
         {
             _mapper = mapper;
             _botClient = botClient;
@@ -59,7 +61,8 @@ namespace Project.Application.UseCases.TelegramBot
             _jwtService = jwtService;
             _refreshRepository = refreshRepository;
             _rabbitPublisher = rabbitPublisher;
-            _messageDictionary = messageDictionary;
+            _client = client;
+
         }
 
         public async Task<Response> Handle(TelegramBotRequest request, CancellationToken cancellationToken)
@@ -68,7 +71,6 @@ namespace Project.Application.UseCases.TelegramBot
             {
                 // Проверяем токен
                 ValidateSecretToken(request.SecretToken);
-
 
                 // Если сообщение есть, обрабатываем его
                 if (request.Update.Message != null)
@@ -110,9 +112,11 @@ namespace Project.Application.UseCases.TelegramBot
 
             if (existingData != null && existingData.InputPhone == message.Contact?.PhoneNumber)
             {
-                await _rabbitPublisher.SendMessage(message.Contact?.PhoneNumber);
+                var response = await _client.GetResponse<TransferForAuthDto>(new TransferForAuthRequestDTO() { PhoneNumber = existingData.InputPhone });
 
-                if (!_messageDictionary.TryGetValue(message.Contact?.PhoneNumber, out var userResponseDTO))
+                var userResponseDTO = response.Message;
+
+                if (userResponseDTO is null)
                 {
                     await _botClient.SendMessage(
                         message.Chat.Id,
@@ -121,18 +125,6 @@ namespace Project.Application.UseCases.TelegramBot
                         replyMarkup: replyMarkup
                     );
                     return new Response("No user data available from RabbitMQ", 404);
-                }
-
-                // Генерация токена после подтверждения номера
-                if (userResponseDTO == null)
-                {
-                    await _botClient.SendMessage(
-                        message.Chat.Id,
-                        "Пользователь не найден. Похоже, вы не являетесь нашим клиентом.",
-                        cancellationToken: cancellationToken,
-                        replyMarkup: replyMarkup
-                    );
-                    return null;
                 }
 
                 // Отправляем уведомление с кодом авторизации пользователю в Telegram
