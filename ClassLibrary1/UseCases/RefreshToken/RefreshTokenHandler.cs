@@ -5,6 +5,7 @@ using Project.Application.HadlerResponce;
 using Project.Application.Interfaces;
 using Project.Domain.Entities;
 using Project.Domain.Interfaces;
+using ServiceAbonents.Dtos;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -21,8 +22,8 @@ namespace Project.Application.UseCases.RefreshToken
         private readonly IRefreshRepository _refreshRepository;
         private readonly IJwtService _jwtService;
         private readonly IRabbitPublisher _rabbitPublisher;
-        ConcurrentDictionary<string, UserResponseDTO> _messageDictionary;
-        public RefreshTokenHandler(ConcurrentDictionary<string, UserResponseDTO> messageDictionary, IUnitOfWork unitOfWork, IMapper mapper, IRefreshRepository refreshRepository, IJwtService jwtService, IRabbitPublisher rabbitPublisher)
+        ConcurrentDictionary<string, TransferForAuthDto> _messageDictionary;
+        public RefreshTokenHandler(ConcurrentDictionary<string, TransferForAuthDto> messageDictionary, IUnitOfWork unitOfWork, IMapper mapper, IRefreshRepository refreshRepository, IJwtService jwtService, IRabbitPublisher rabbitPublisher)
         { 
             _mapper = mapper;
             _unitOfWork = unitOfWork;

@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using MassTransit;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
@@ -9,6 +10,7 @@ using Project.Application.UseCases.RefreshToken;
 using Project.Application.UseCases.TelegramBot;
 using Project.Domain.Interfaces;
 using Project.Domain.Security;
+using ServiceAbonents.Dtos;
 using System.IdentityModel.Tokens.Jwt;
 using Telegram.Bot;
 using Telegram.Bot.Requests.Abstractions;
@@ -25,12 +27,14 @@ namespace WebAPI.Controllers
         private readonly IMediator _mediator;
         private readonly IBotTelegram _botInputRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IRequestClient<TransferForAuthRequestDTO> _client;
 
-        public AuthController(IMediator mediator, IBotTelegram botInputRepository, IHttpContextAccessor httpContextAccessor)
+        public AuthController(IMediator mediator, IBotTelegram botInputRepository, IHttpContextAccessor httpContextAccessor, IRequestClient<TransferForAuthRequestDTO> client) 
         {
             _mediator = mediator;
             _botInputRepository = botInputRepository ?? throw new ArgumentNullException(nameof(botInputRepository));
             _httpContextAccessor = httpContextAccessor;
+            _client = client;
         }
 
         [HttpPost("authentication")]
@@ -103,6 +107,15 @@ namespace WebAPI.Controllers
         [HttpPost("setPhone")]
         public async Task<IActionResult> SetPhone([FromServices] ITelegramBotClient bot, [FromBody] PhoneDTO request, CancellationToken ct)
         {
+            var response = await _client.GetResponse<TransferForAuthDto>(new TransferForAuthRequestDTO() { PhoneNumber = request.Phone });
+
+            var userResponseDTO = response.Message;
+
+            if (userResponseDTO is null)
+            {
+                return StatusCode(404, "Пользователь не найден");
+            }
+
             var webhookUrl = BotConfiguration.Secrets.BotWebhookUrl.AbsoluteUri;
             await bot.SetWebhook(webhookUrl, allowedUpdates: [], secretToken: BotConfiguration.Secrets.SecretToken, cancellationToken: ct);
             var generateCode = CodeGenerator.GenerateCode().ToString();
@@ -126,7 +139,6 @@ namespace WebAPI.Controllers
             if (!_httpContextAccessor.HttpContext.User.Identity.IsAuthenticated)
                 return Unauthorized("User is not authenticated.");
 
-            // Извлекаем ID пользователя из JWT-токена
             var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "Id");
             if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
                 return Unauthorized("Invalid user ID in token.");
@@ -137,11 +149,8 @@ namespace WebAPI.Controllers
                 return BadRequest($"No refresh token found for session.");
 
 
-
-            // Удаляем найденную сессию
             await _mediator.Send(new LogoutRequest(userId), cancellationToken);
 
-            // Удаляем соответствующий refresh-токен из cookies
             Response.Cookies.Delete(cookieName, new CookieOptions
             {
                 HttpOnly = true,

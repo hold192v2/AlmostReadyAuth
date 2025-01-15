@@ -1,4 +1,5 @@
 ﻿using Project.Application.DTOs;
+using ServiceAbonents.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,7 @@ namespace Project.Application.Interfaces
 {
     public  interface IJwtService
     {
-        string Generate(UserResponseDTO data);
-        ClaimsIdentity GenerateClaims(UserResponseDTO user);
+        string Generate(TransferForAuthDto data);
+        ClaimsIdentity GenerateClaims(TransferForAuthDto user);
     }
 }

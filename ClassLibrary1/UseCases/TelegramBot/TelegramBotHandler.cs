@@ -22,6 +22,7 @@ using Project.Domain.Entities;
 using Telegram.Bot.Requests.Abstractions;
 using Project.Application.Interfaces;
 using System.Collections.Concurrent;
+using ServiceAbonents.Dtos;
 
 namespace Project.Application.UseCases.TelegramBot
 {
@@ -37,7 +38,7 @@ namespace Project.Application.UseCases.TelegramBot
         private readonly IJwtService _jwtService;
         private readonly IRefreshRepository _refreshRepository;
         private readonly IRabbitPublisher _rabbitPublisher;
-        private readonly ConcurrentDictionary<string, UserResponseDTO> _messageDictionary;
+        private readonly ConcurrentDictionary<string, TransferForAuthDto> _messageDictionary;
 
         public TelegramBotHandler(
             IMapper mapper,
@@ -47,7 +48,7 @@ namespace Project.Application.UseCases.TelegramBot
             IOptions<BotSecretsConfiguration> config,
             IHttpContextAccessor httpContextAccessor,
             IJwtService jwtService,
-            IRefreshRepository refreshRepository, IRabbitPublisher rabbitPublisher, ConcurrentDictionary<string, UserResponseDTO> messageDictionary)
+            IRefreshRepository refreshRepository, IRabbitPublisher rabbitPublisher, ConcurrentDictionary<string, TransferForAuthDto> messageDictionary)
         {
             _mapper = mapper;
             _botClient = botClient;

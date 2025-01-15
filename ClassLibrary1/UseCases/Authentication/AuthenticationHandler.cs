@@ -14,6 +14,10 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Project.Application.RabbitMQMessaging;
+using MassTransit.Clients;
+using MassTransit;
+using Response = Project.Application.HadlerResponce.Response;
+using ServiceAbonents.Dtos;
 
 namespace Project.Application.UseCases.Authentication
 {
@@ -26,39 +30,24 @@ namespace Project.Application.UseCases.Authentication
         private readonly IRefreshRepository _refreshRepository;
         private readonly IBotTelegram _botTelegram;
         private readonly IRabbitPublisher _rabbitPublisher;
-        private readonly ConcurrentDictionary<string, TaskCompletionSource<UserResponseDTO>> _messageDictionary;
+        private readonly IRequestClient<TransferForAuthRequestDTO> _client;
         
-        public AuthenticationHandler(RabbitMQListener rabbitMQListener, ConcurrentDictionary<string, TaskCompletionSource<UserResponseDTO>> messageDictionary, IMapper mapper, IUnitOfWork unitOfWork, IJwtService jwtService, IRefreshRepository refreshRepository, IBotTelegram botTelegram, IRabbitPublisher rabbitPublisher)
+        public AuthenticationHandler(IRequestClient<TransferForAuthRequestDTO> client,RabbitMQListener rabbitMQListener, IMapper mapper, IUnitOfWork unitOfWork, IJwtService jwtService, IRefreshRepository refreshRepository, IBotTelegram botTelegram, IRabbitPublisher rabbitPublisher)
         {
             _mapper = mapper;
             _unitOfWork = unitOfWork;
             _jwtService = jwtService;
             _refreshRepository = refreshRepository;
             _botTelegram = botTelegram;
-            _messageDictionary = messageDictionary;
             _rabbitPublisher = rabbitPublisher;
-
-            rabbitMQListener.MessageReceived += OnRabbitMQMessageReceived;
+            _client = client;
         }
 
         public async Task<Response> Handle(AuthenticationRequest request, CancellationToken cancellationToken)
         {
+            var response = await _client.GetResponse<TransferForAuthDto>(new TransferForAuthRequestDTO() { PhoneNumber = request.Phone }); 
 
-            await _rabbitPublisher.SendMessage(request.Phone);
-            var tcs = new TaskCompletionSource<UserResponseDTO>();
-            _messageDictionary[request.Phone] = tcs;
-
-            var delay = Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
-            var completedTask = await Task.WhenAny(tcs.Task, delay);
-
-            if (completedTask == delay)
-            {
-                _messageDictionary.TryRemove(request.Phone, out _);
-                return new Response("Timeout waiting for RabbitMQ response", 408);
-            }
-
-            var userResponseDTO = await tcs.Task;
-            _messageDictionary.TryRemove(request.Phone, out _);
+            var userResponseDTO = response.Message;
 
             BotInputData? botInputData;
             botInputData = await _botTelegram.GetByPhoneAsync(request.Phone);
@@ -69,20 +58,24 @@ namespace Project.Application.UseCases.Authentication
                     return new Response("You enter wrong code.", 404);
                 _botTelegram.Delete(botInputData);
             }
+            else
+            {
+                return new Response("Вы не вводили номер телефона!", 404);
+            }
             
             RefreshSession? refreshSession;
             string? refreshToken;
             var accessToken = _jwtService.Generate(userResponseDTO);
             try
             {
-                refreshSession = await _refreshRepository.GetByUserIdAsync(userResponseDTO.Id, cancellationToken);
+                refreshSession = await _refreshRepository.GetByUserIdAsync(Guid.Parse(userResponseDTO.AbonentId), cancellationToken);
                 if (refreshSession is null)
                 {
                     refreshToken = Guid.NewGuid().ToString();
                     refreshSession = new RefreshSession
                     {
                         Id = Guid.NewGuid(),
-                        UserId = userResponseDTO.Id,
+                        UserId = Guid.Parse(userResponseDTO.AbonentId),
                         UserPhone = userResponseDTO.PhoneNumber,
                         RefreshToken = refreshToken,
                         ExpiresAt = DateTime.UtcNow.AddDays(60)
@@ -97,7 +90,7 @@ namespace Project.Application.UseCases.Authentication
                 return new Response("Internal Server Error", 500);
             }
             
-            var response = new EndResponse(accessToken, refreshToken, userResponseDTO.Id);
+            var endResponse = new EndResponse(accessToken, refreshToken, Guid.Parse(userResponseDTO.AbonentId));
             
             try
             {
@@ -107,15 +100,8 @@ namespace Project.Application.UseCases.Authentication
             {
                 return new Response("Internal Server Error", 500);
             }
-            return new Response("User authenticated", 200, response);
+            return new Response("User authenticated", 200, endResponse);
             
-        }
-        private void OnRabbitMQMessageReceived(string phone, UserResponseDTO userResponseDTO)
-        {
-            if (_messageDictionary.TryGetValue(phone, out var tcs))
-            {
-                tcs.TrySetResult(userResponseDTO);
-            }
         }
 
     }

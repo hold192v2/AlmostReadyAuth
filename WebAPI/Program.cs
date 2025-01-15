@@ -14,6 +14,9 @@ using Project.Application.Interfaces;
 using Project.Application.Services;
 using Hangfire;
 using Project.Application.RabbitMQMessaging;
+using MassTransit;
+using Project.Application.DTOs;
+using ServiceAbonents.Dtos;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,7 +34,21 @@ builder.Services.ConfigureApplicationApp();
 builder.Services.AddMvc()
                 .AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
+builder.Services.AddMassTransit(x =>
+{
+    x.SetKebabCaseEndpointNameFormatter();// Регистрация RequestClient
+    x.AddRequestClient<TransferForAuthRequestDTO>();
+    // Настройка подключения к шине
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host("amqps://akmeanzg:TMOCQxQAEWZjfE0Y7wH5v0TN_XTQ9Xfv@mouse.rmq5.cloudamqp.com/akmeanzg");
+        cfg.Message<TransferForAuthRequestDTO>(x => x.SetEntityName("queue-name"));
 
+        cfg.ClearSerialization();
+        cfg.UseRawJsonSerializer();
+    });
+
+});
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();

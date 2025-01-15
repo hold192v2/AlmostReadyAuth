@@ -17,6 +17,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot.Polling;
 using Project.Application.UseCases.Authentication;
+using MassTransit;
+using ServiceAbonents.Dtos;
 
 namespace Project.Infrastructure
 {
@@ -35,8 +37,8 @@ namespace Project.Infrastructure
             services.AddScoped<IRefreshRepository, RefreshRepository>();
             services.AddScoped<AuthenticationHandler>();
             services.AddSingleton<RabbitMQListener>();
-            services.AddSingleton<ConcurrentDictionary<string, UserResponseDTO>>();
-            services.AddSingleton<ConcurrentDictionary<string, TaskCompletionSource<UserResponseDTO>>>();
+            services.AddSingleton<ConcurrentDictionary<string, TransferForAuthDto>>();
+            services.AddSingleton<ConcurrentDictionary<string, TaskCompletionSource<TransferForAuthDto>>>();
             //services.AddScoped<IRabbitMqService, RabbitMqService>();
         }
     }

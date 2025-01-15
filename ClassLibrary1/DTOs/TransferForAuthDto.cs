@@ -5,11 +5,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Project.Application.DTOs
+namespace ServiceAbonents.Dtos
 {
-    public class UserResponseDTO
+    public class TransferForAuthDto
     {
-        public Guid Id { get; set; }
+        public string AbonentId { get; set; }
         public string PhoneNumber { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
     }

@@ -2,6 +2,7 @@
 using Project.Application.DTOs;
 using Project.Application.Interfaces;
 using Project.Domain.Security;
+using ServiceAbonents.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -23,7 +24,7 @@ namespace Project.Application.Services
         /// </summary>
         /// <param name="data">Данные пользователя для включения в токен.</param>
         /// <returns>Строка JWT токена.</returns>
-        public string Generate(UserResponseDTO data)
+        public string Generate(TransferForAuthDto data)
         {
             // Создание обработчика для генерации токена.
             var handler = new JwtSecurityTokenHandler();
@@ -54,13 +55,13 @@ namespace Project.Application.Services
         /// </summary>
         /// <param name="user">Объект, содержащий информацию о пользователе.</param>
         /// <returns>ClaimsIdentity, содержащий данные пользователя.</returns>
-        public ClaimsIdentity GenerateClaims(UserResponseDTO user)
+        public ClaimsIdentity GenerateClaims(TransferForAuthDto user)
         {
             // Создание объекта ClaimsIdentity.
             var claims = new ClaimsIdentity();
 
             // Добавление основного идентификатора пользователя.
-            claims.AddClaim(new Claim("Id", user.Id.ToString()));
+            claims.AddClaim(new Claim("Id", user.AbonentId.ToString()));
 
             // Добавление имени пользователя (PhoneNumber).
             claims.AddClaim(new Claim(ClaimTypes.Name, user.PhoneNumber));
