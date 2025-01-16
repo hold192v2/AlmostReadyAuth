@@ -55,7 +55,7 @@ namespace WebAPI.Controllers
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.None,
                 MaxAge = TimeSpan.FromDays(60),
                 Path = "/auth"
             }); 
@@ -84,7 +84,7 @@ namespace WebAPI.Controllers
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.None,
                 MaxAge = TimeSpan.FromDays(60),
                 Path = "/auth"
             });
@@ -196,7 +196,7 @@ namespace WebAPI.Controllers
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.None,
                 Path = "/auth"
             });
 
