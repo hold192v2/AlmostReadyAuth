@@ -97,7 +97,6 @@ builder.Services.AddSwaggerGen(options =>
     options.CustomSchemaIds(type => type.ToString());
 });
 
-builder.Services.ConfigureCorsPolicy();
 builder.Services.AddHostedService<RabbitMQListener>();
 
 builder.AddJwtAuthentication();
