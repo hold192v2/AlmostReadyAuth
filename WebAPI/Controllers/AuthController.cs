@@ -135,27 +135,34 @@ namespace WebAPI.Controllers
         [HttpPost("setPhone")]
         public async Task<IActionResult> SetPhone([FromServices] ITelegramBotClient bot, [FromBody] PhoneDTO request, CancellationToken ct)
         {
-            var response = await _client.GetResponse<TransferForAuthDto>(new TransferForAuthRequestDTO() { PhoneNumber = request.Phone });
-
-            var userResponseDTO = response.Message;
-
-            if (userResponseDTO is null)
-            {
-                return StatusCode(404, "Пользователь не найден");
-            }
-
-            var webhookUrl = BotConfiguration.Secrets.BotWebhookUrl.AbsoluteUri;
-            await bot.SetWebhook(webhookUrl, allowedUpdates: [], secretToken: BotConfiguration.Secrets.SecretToken, cancellationToken: ct);
-            var generateCode = CodeGenerator.GenerateCode().ToString();
             try
             {
-                await _botInputRepository.SavePhoneNumberAsync(request.Phone, generateCode);
-                
-                return Ok();
+                var response = await _client.GetResponse<TransferForAuthDto>(new TransferForAuthRequestDTO() { PhoneNumber = request.Phone });
+
+                var userResponseDTO = response.Message;
+
+                if (userResponseDTO is null)
+                {
+                    return StatusCode(404, "Пользователь не найден");
+                }
+
+                var webhookUrl = BotConfiguration.Secrets.BotWebhookUrl.AbsoluteUri;
+                await bot.SetWebhook(webhookUrl, allowedUpdates: [], secretToken: BotConfiguration.Secrets.SecretToken, cancellationToken: ct);
+                var generateCode = CodeGenerator.GenerateCode().ToString();
+                try
+                {
+                    await _botInputRepository.SavePhoneNumberAsync(request.Phone, generateCode);
+
+                    return Ok();
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, $"Failed to save phone number: {ex.Message}");
+                }
             }
-            catch (Exception ex)
+            catch 
             {
-                return StatusCode(500, $"Failed to save phone number: {ex.Message}");
+                return StatusCode(404, $"Пользователь не найден");
             }
         }
         /// <summary>
