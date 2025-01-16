@@ -20,6 +20,16 @@ using ServiceAbonents.Dtos;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(builder =>
+    {
+        builder.SetIsOriginAllowed(origin => true)
+               .AllowAnyMethod()
+               .AllowAnyHeader()
+               .AllowCredentials();
+    });
+});
 // Add services to the container.
 builder.AddConfiguration();
 builder.Services.AddHangfireServer();
@@ -59,7 +69,7 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Demo API", Version = "v1" });
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Auth API", Version = "v1" });
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
@@ -91,9 +101,24 @@ builder.Services.ConfigureCorsPolicy();
 builder.Services.AddHostedService<RabbitMQListener>();
 
 builder.AddJwtAuthentication();
+builder.Services.AddSwaggerGen(options =>
+{
+    var basePath = AppContext.BaseDirectory;
+
+    var xmlPath = Path.Combine(basePath, "WebAPI.xml");
+    options.IncludeXmlComments(xmlPath);
+});
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.yaml", "v1");
+    });
+}
 CreateDatabase(app);
 
 app.UseCors();
