@@ -62,18 +62,18 @@ namespace WebAPI.Controllers
             return Ok(new { response.Data.AccessToken });
         }
         /// <summary>
-        /// Обновление токена доступа с использованием refresh-токена.
+        /// Обновление токена доступа с использованием refresh-токена. Необходим id user-а.
         /// </summary>
-        /// <param name="userId">Имя пользователя, которому нужно обновить accesss-токен</param>
+        /// <param name="userId">Id пользователя, которому нужно обновить accesss-токен</param>
         /// <returns>Body - access-токен, Cookie - refresh-токен</returns>
         /// <response code="200">Токен успешно обновлен. Возвращает новый токен доступа.</response>
         /// <response code="400">Неверные данные или запрос не прошел проверку.</response>
         /// <response code="401">Отсутствует refresh-токен или он недействителен.</response>
         /// <response code="500">Внутренняя ошибка сервера.</response>
         [HttpPost("refresh")]
-        public async Task<IActionResult> RefreshToken([FromBody] Guid userId, CancellationToken cansellation)
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshRequestDTO userId, CancellationToken cansellation)
         {
-            if (!Request.Cookies.TryGetValue($"refreshToken_{userId}", out var refreshToken))
+            if (!Request.Cookies.TryGetValue($"refreshToken_{userId.UserId}", out var refreshToken))
                 return Unauthorized("Refresh token is missing.");
             var request = new RefreshTokenRequest(refreshToken);
 
