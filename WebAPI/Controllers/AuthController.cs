@@ -36,7 +36,14 @@ namespace WebAPI.Controllers
             _httpContextAccessor = httpContextAccessor;
             _client = client;
         }
-
+        /// <summary>
+        /// Аутентификация пользователя, исползуется номер телефона и код авторизации.
+        /// </summary>
+        /// <param name="request">Запрос для аутентификации пользователя</param>
+        /// <returns></returns>
+        /// <response code="200">Успешное выполнение</response>
+        /// <response code="400">Ошибка API(скоре всего неправильные данные)</response>
+        /// <response code="500">Ошибка сервера</response>
         [HttpPost("authentication")]
         public async Task<IActionResult> Authentication([FromBody] AuthenticationRequest request, CancellationToken cancellationToken)
         {
@@ -54,18 +61,26 @@ namespace WebAPI.Controllers
             }); 
             return Ok(new { response.Data.AccessToken });
         }
-
+        /// <summary>
+        /// Обновление токена доступа с использованием refresh-токена.
+        /// </summary>
+        /// <param name="userId">Имя пользователя, которому нужно обновить accesss-токен</param>
+        /// <returns>Body - access-токен, Cookie - refresh-токен</returns>
+        /// <response code="200">Токен успешно обновлен. Возвращает новый токен доступа.</response>
+        /// <response code="400">Неверные данные или запрос не прошел проверку.</response>
+        /// <response code="401">Отсутствует refresh-токен или он недействителен.</response>
+        /// <response code="500">Внутренняя ошибка сервера.</response>
         [HttpPost("refresh")]
-        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request, CancellationToken cansellation)
+        public async Task<IActionResult> RefreshToken([FromBody] Guid userId, CancellationToken cansellation)
         {
-            if (!Request.Cookies.TryGetValue("refreshToken", out var refreshToken))
+            if (!Request.Cookies.TryGetValue($"refreshToken_{userId}", out var refreshToken))
                 return Unauthorized("Refresh token is missing.");
-            request = request with { RefreshToken = refreshToken };
+            var request = new RefreshTokenRequest(refreshToken);
 
             var response = await _mediator.Send(request, cansellation);
             if (response is null) return BadRequest();
 
-            Response.Cookies.Append("refreshToken", response.Data.RefreshToken, new CookieOptions
+            Response.Cookies.Append($"refreshToken_{userId}", response.Data.RefreshToken, new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
@@ -77,7 +92,13 @@ namespace WebAPI.Controllers
             return Ok(new { response.Data.AccessToken });
         }
 
-
+        /// <summary>
+        /// Работа с ботом, не нужно для работы с клиентом напрямую.
+        /// </summary>
+        /// <returns></returns>
+        /// <response code="200">Успешное выполнение</response>
+        /// <response code="400">Ошибка API(скоре всего неправильные данные)</response>
+        /// <response code="500">Ошибка сервера</response>
         [HttpPost("bot")]
         public async Task<IActionResult> Bot(
         [FromBody] Update request,
@@ -103,7 +124,14 @@ namespace WebAPI.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
-
+        /// <summary>
+        /// Ввод телефона для получения кода авторизации
+        /// </summary>
+        /// <returns></returns>
+        /// <response code="200">Успешное выполнение</response>
+        /// <response code="400">Ошибка API(скоре всего неправильные данные)</response>
+        /// <response code="404">Пользователя не существует</response>
+        /// <response code="500">Ошибка сервера</response>
         [HttpPost("setPhone")]
         public async Task<IActionResult> SetPhone([FromServices] ITelegramBotClient bot, [FromBody] PhoneDTO request, CancellationToken ct)
         {
@@ -130,7 +158,13 @@ namespace WebAPI.Controllers
                 return StatusCode(500, $"Failed to save phone number: {ex.Message}");
             }
         }
-
+        /// <summary>
+        /// Выход пользователя из аккаунта. Удаление сессии и refresh-токена.
+        /// </summary>
+        /// <returns></returns>
+        /// <response code="200">Успешное выполнение</response>
+        /// <response code="400">Ошибка API(скоре всего неправильные данные)</response>
+        /// <response code="500">Ошибка сервера</response>
         [Authorize]
         [HttpPost("logout")]
 
